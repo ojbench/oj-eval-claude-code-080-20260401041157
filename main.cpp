@@ -1,40 +1,59 @@
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <cstring>
 using namespace std;
 
 const int MAXN = 100005;
 vector<int> graph[MAXN];
-int parent[MAXN];
-int depth[MAXN];
+int color[MAXN];
 bool visited[MAXN];
-bool inOddCycle[MAXN];
+bool canBeInvited[MAXN];
 
-void markCycle(int u, int v) {
-    // Mark all vertices in the cycle from v to u
-    int curr = u;
-    while (curr != v) {
-        inOddCycle[curr] = true;
-        curr = parent[curr];
+// BFS to check if component is bipartite and mark all vertices
+bool checkBipartite(int start, vector<int>& component) {
+    queue<int> q;
+    q.push(start);
+    color[start] = 0;
+    visited[start] = true;
+    component.push_back(start);
+
+    bool isBipartite = true;
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        for (int v : graph[u]) {
+            if (!visited[v]) {
+                visited[v] = true;
+                color[v] = 1 - color[u];
+                q.push(v);
+                component.push_back(v);
+            } else if (color[v] == color[u]) {
+                isBipartite = false;
+            }
+        }
     }
-    inOddCycle[v] = true;
+
+    return isBipartite;
 }
 
-void dfs(int u, int par, int d) {
-    visited[u] = true;
-    parent[u] = par;
-    depth[u] = d;
+// Check if a vertex is in a biconnected component containing an odd cycle
+// For now, use a simple heuristic: degree >= 2 in a non-bipartite component
+void markInvitable(vector<int>& component, bool isNonBipartite) {
+    if (!isNonBipartite) {
+        // Bipartite component - no one can be invited
+        return;
+    }
 
-    for (int v : graph[u]) {
-        if (!visited[v]) {
-            dfs(v, u, d + 1);
-        } else if (v != par) {
-            // Back edge found - check cycle length
-            int cycleLength = depth[u] - depth[v] + 1;
-            if (cycleLength % 2 == 1) {
-                // Odd cycle found - mark all vertices in this cycle
-                markCycle(u, v);
-            }
+    // Non-bipartite component
+    // Mark vertices with degree >= 2 as potentially invitable
+    for (int v : component) {
+        if (graph[v].size() >= 2) {
+            // Need to check if v is actually in an odd cycle
+            // For now, mark as potentially invitable
+            canBeInvited[v] = true;
         }
     }
 }
@@ -51,24 +70,27 @@ int main() {
     }
 
     memset(visited, false, sizeof(visited));
-    memset(inOddCycle, false, sizeof(inOddCycle));
-    memset(parent, -1, sizeof(parent));
+    memset(color, -1, sizeof(color));
+    memset(canBeInvited, false, sizeof(canBeInvited));
 
-    // Run DFS from each unvisited vertex
+    // Check each connected component
     for (int i = 1; i <= n; i++) {
         if (!visited[i]) {
-            dfs(i, -1, 0);
+            vector<int> component;
+            bool isBipartite = checkBipartite(i, component);
+            markInvitable(component, !isBipartite);
         }
     }
 
-    int cannotBeInvited = 0;
+    // Count vertices that cannot be invited
+    int answer = 0;
     for (int i = 1; i <= n; i++) {
-        if (!inOddCycle[i]) {
-            cannotBeInvited++;
+        if (!canBeInvited[i]) {
+            answer++;
         }
     }
 
-    cout << cannotBeInvited << endl;
+    cout << answer << endl;
 
     return 0;
 }

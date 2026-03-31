@@ -4,4 +4,3 @@ code
 *.o
 main
 cmake_install.cmake
-Makefile

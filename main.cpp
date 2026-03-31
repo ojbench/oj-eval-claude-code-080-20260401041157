@@ -39,26 +39,10 @@ bool checkBipartite(int start, vector<int>& component) {
     return isBipartite;
 }
 
-// Check if a vertex is in a biconnected component containing an odd cycle
-// For now, use a simple heuristic: degree >= 2 in a non-bipartite component
-void markInvitable(vector<int>& component, bool isNonBipartite) {
-    if (!isNonBipartite) {
-        // Bipartite component - no one can be invited
-        return;
-    }
-
-    // Non-bipartite component
-    // Mark vertices with degree >= 2 as potentially invitable
-    for (int v : component) {
-        if (graph[v].size() >= 2) {
-            // Need to check if v is actually in an odd cycle
-            // For now, mark as potentially invitable
-            canBeInvited[v] = true;
-        }
-    }
-}
-
 int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
     int n, m;
     cin >> n >> m;
 
@@ -78,7 +62,15 @@ int main() {
         if (!visited[i]) {
             vector<int> component;
             bool isBipartite = checkBipartite(i, component);
-            markInvitable(component, !isBipartite);
+
+            if (!isBipartite) {
+                // Non-bipartite component - mark vertices with degree >= 2
+                for (int v : component) {
+                    if (graph[v].size() >= 2) {
+                        canBeInvited[v] = true;
+                    }
+                }
+            }
         }
     }
 
